@@ -7,7 +7,7 @@ output:
     theme: cerulean
 ---
 
-# This is Jeff's awesome website
+# This is Zandini's awesome website
 
 ![](https://media.giphy.com/media/drXGoW1iudhKw/giphy.gif)
 
@@ -46,4 +46,5 @@ Glorious Pictures of Divinity
 
 ![](images/yosh.gif)
 
+He guards the [plotly](plotly.html) content!
 
