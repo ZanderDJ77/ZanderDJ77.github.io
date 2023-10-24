@@ -7,7 +7,7 @@ output:
     theme: cerulean
 ---
 
-# This is Zandini's awesome website
+# This is Zandini's website
 
 ![](https://media.giphy.com/media/drXGoW1iudhKw/giphy.gif)
 

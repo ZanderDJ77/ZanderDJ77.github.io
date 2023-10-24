@@ -1,22 +1,18 @@
 ---
-title: "Plot_ly Project Page"
-output: html_document
-date: "2023-10-24"
+title: "Untitled"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
 ---
 
-#Plotly
+```{r setup, include=FALSE}
+library(flexdashboard)
 
-We are making interactive plots
-
-```{r}
 library(tidyverse)
 library(plotly)
 library(p8105.datasets)
-```
 
-Focusing on NYC Airbnb Data
-
-```{r}
 data("nyc_airbnb")
 
 nyc_airbnb = nyc_airbnb |> 
@@ -30,15 +26,10 @@ nyc_airbnb = nyc_airbnb |>
   )
 ```
 
+Column {data-width=650}
+-----------------------------------------------------------------------
 
-```{r}
-nyc_airbnb |> 
-  mutate(text_label = str_c("Price: $", price, "\nRating:", stars)) |> 
-plot_ly(
-  x = ~lat, y = ~long, color = ~price, text = ~text_label,
-  type = "scatter", mode = "markers", alpha = 0.5
-)
-```
+### Chart A
 
 ```{r}
 nyc_airbnb |> 
@@ -46,8 +37,20 @@ nyc_airbnb |>
   plot_ly(y = ~price, color = ~neighbourhood, type = "box", colors = "viridis")
 ```
 
+Column {data-width=350}
+-----------------------------------------------------------------------
 
-Let's make a bar plot!
+### Chart B
+
+```{r}
+nyc_airbnb |> 
+  mutate(text_label = str_c("Price: $", price, "\nRating:", stars)) |> 
+plot_ly(
+  x = ~lat, y = ~long, color = ~price, text = ~text_label,
+  type = "scatter", mode = "markers", alpha = 0.5)
+```
+
+### Chart C
 
 ```{r}
 nyc_airbnb |> 
@@ -55,8 +58,5 @@ nyc_airbnb |>
   mutate(neighbourhood = fct_reorder(neighbourhood, n)) |> 
   plot_ly(x = ~neighbourhood, y = ~n, color = ~neighbourhood,
           type = "bar", colors = "viridis")
-```
-
-
 ```
 
