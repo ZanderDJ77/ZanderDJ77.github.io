@@ -1,50 +1,30 @@
 ---
-title: "My awesome website"
+title: "Zander De Jesus - Personal Research Website"
 output: 
   html_document:
     toc: true
     toc_float: true
-    theme: cerulean
+    theme: sandstone
 ---
+![](images/hiking_cover_photo.jpeg)
 
-# This is Zandini's website
-
-![](https://media.giphy.com/media/drXGoW1iudhKw/giphy.gif)
-
-You can add text
-
-* and lists 
-* with extra bullets
-
-You can *FORMAT* and **bold**
+# Welcome
 
 
-This is a [link](https://www.google.com).  
+My name is Zander De Jesus, I am a 1st-year PhD student at the Columbia Mailman School of Public Health, Environmental Health Sciences Department. I am most passionate about Environmental Justice Policy, Pollution Remediation, Community-led Field Science, and the History of Social Movements. In particular, making sure we keep a democratic and decolonial lens when we politically organize, to empower all people within our shared communities.
 
-Here is a link to the [about](about.html) page
+To learn more about my research background, head over to my [about](about.html) page!
 
+**My Current Projects and Interdisciplinary Research Interests include:**
 
-and still R
+- Learning the R Language in P8105: Data Science 1 to apply statistical modeling to easily understandable visualizations of Environmental Health Data for public communication.
 
-```{r}
-library(tidyverse)
+- Developing Mapping Skills in QGIS Software to understand Air Pollution Exposure.
 
-plot_df = 
-  tibble(
-    x = runif(100),
-    y = 1 +2 *x +rnorm(100)
-  )
-
-plot_df |> 
-  ggplot(aes(x = x, y = y)) + geom_point()
-```
+- Practicing Ethnographic Field Methods in the Race, Climate Change, Environmental Justice Class for community engagement. 
 
 
-# Heres a new section
+# What can you find on this site?
 
-Glorious Pictures of Divinity
-
-![](images/yosh.gif)
-
-He guards the [plotly](plotly.html) content!
+[plotly](plotly.html) content!
 
