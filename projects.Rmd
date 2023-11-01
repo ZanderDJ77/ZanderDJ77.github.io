@@ -1,11 +1,92 @@
 ---
-title: "Project Page"
+title: "Plot_ly Project Page - NOAA Analysis"
 output: html_document
-date: "2023-10-19"
+date: "11-1-2023"
 ---
 
-Did you ever hear the Tragedy of Darth Plagueis the Wise?
+## Problem 2 Work: Creating Dashboard Graphs using `plotly`
 
-I thought not...
+For Homework 4 I am using the NOAA Meteorology Data Repository that is labeled `ny_noaa` in the p8105.datasets package. 
 
-It's not something the Jedi would tell you.
+This page will provide a step-by-step guide of the code and thought processing I used as I designed the visualizations that are on the [dashboard](dashboard.html) page.
+
+```{r Libraries and Settings, message = FALSE}
+library(tidyverse)
+library(p8105.datasets)
+library(plotly)
+library(ggridges)
+library(patchwork)
+
+theme_set(theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+Receiving initial guidance from the Data Import Method that has been Standardized in class lessons that used NOAA data across state sites, before doing specific manipulations to `nyweather_df`. This dataset has snow and snowfall depth variables which were usually excluded in class.
+
+For these exercises, I am focusing on the weather data for years **2006 - 2010** and will be filtering the dataset ahead of time.
+
+```{r Data Import and Initial Cleaning}
+data("ny_noaa")
+
+nyweather_df = ny_noaa |> 
+  janitor::clean_names() |> 
+  filter(date >= "2006-01-01") |> 
+  filter(date <= "2010-12-31") 
+
+#Counting distinct weather station id's that are being used.
+test_count = nyweather_df |> 
+  group_by(id) |> 
+  summarize(n_obs = n()) |> 
+  arrange(desc(n_obs))
+
+```
+
+There are currently `r nrow(test_count)` distinct observational ID weather stations in this dataframe. Specifically **145 distinct stations have full 1826 data collection points** across this full 5 year time period of recorded data (beginning of 2006 to end of 2010, 365 x 5 = 1826).
+
+A separate dataframe containing only full reported observational data for each day can be created through filtering here, and will be called `full_nyweather_df` Note however this does not guarantee missing values from stations that do not record a specific variable.
+
+```{r}
+full_nyweather_df = nyweather_df |> 
+  group_by(id) |> 
+  mutate(n_obs = n()) |> 
+  filter(n_obs >= 1826) |> 
+  ungroup() |> 
+  select(everything(), -n_obs)
+```
+
+full_nyweather_df has `r nrow(full_nyweather_df)` observations across 145 station ids, containing `rncol(full_nyweather_df)` column variables before full manipulation.
+
+For particular specific data set groupings - I will need to convert the `date` format into separated years, months, and days to do average calculations over time, I will use this code below. 
+  separate(col = date,
+           into = c("year", "month", "day"),
+           sep = "-", 
+           convert = TRUE)
+
+USW00014768 = "Rochester_Upstate_NY"
+USW00014735 = "Albany_Mid_NY"
+USW00094728 = "CentralPark_NYC
+
+
+### Graph 1: Measuring Average Monthly Precipitation Overtime across NY Sites, 2006 - 2010
+
+```{r}
+rnoaa::ghcnd_stations(precip_plot)
+
+precip_plot = full_nyweather_df |> 
+  drop_na(prcp) |> 
+  group_by(id) |> 
+  plot_ly(x = ~date, y = ~prcp,
+          type = "scatter", colors = "viridis")
+
+precip_plot
+  
+
+```
+
