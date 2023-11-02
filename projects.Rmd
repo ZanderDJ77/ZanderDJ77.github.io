@@ -63,9 +63,9 @@ full_nyweather_df = nyweather_df |>
   select(everything(), -n_obs)
 ```
 
-full_nyweather_df has `r nrow(full_nyweather_df)` observations across 145 station ids, containing `rncol(full_nyweather_df)` column variables before full manipulation.
+`full_nyweather_df` has `r nrow(full_nyweather_df)` observations across 145 station ids, containing `rncol(full_nyweather_df)` column variables before full manipulation.
 
-To make data more manageable, a small dataset was created containing 3 Sites of interest across the Geography of NY State, 2006 - 2010, which have a monitoring point every day from 2006-2010.
+To make data more manageable, a small dataset `weather_sites_df` was created containing 3 Sites of interest across the Geography of NY State, 2006 - 2010, which have a monitoring point every day from 2006-2010.
 
 ```{r}
 weather_sites_df = full_nyweather_df |> 
