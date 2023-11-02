@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "Dashboard - NY NOAA Weather Data Analysis"
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
@@ -7,56 +7,112 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-library(flexdashboard)
-
 library(tidyverse)
-library(plotly)
 library(p8105.datasets)
+library(plotly)
 
-data("nyc_airbnb")
+theme_set(theme(legend.position = "bottom"))
 
-nyc_airbnb = nyc_airbnb |> 
-  mutate(stars = (review_scores_location/2)) |> 
-  select(borough= neighbourhood_group, neighbourhood, stars, price, room_type, lat, long) |> 
-  drop_na(stars) |> 
-  filter(
-    borough == "Manhattan",
-    room_type == "Entire home/apt",
-    price %in% 100:500
-  )
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+
+data("ny_noaa")
+
+nyweather_df = ny_noaa |> 
+  janitor::clean_names() |> 
+  filter(date >= "2006-01-01") |> 
+  filter(date <= "2010-12-31") |> 
+  mutate(tmax = as.numeric(tmax), tmin = as.numeric(tmin)) |> 
+  mutate(
+    tmin = (tmin/10),
+    tmax = (tmax/10))
+
+#Counting distinct weather station id's that are being used.
+test_count = nyweather_df |> 
+  group_by(id) |> 
+  summarize(n_obs = n()) |> 
+  arrange(desc(n_obs))
 ```
+
+```{r Specific Data Cleaning for each graph, include=FALSE}
+#Full Dataset with all reporting days
+full_nyweather_df = nyweather_df |> 
+  group_by(id) |> 
+  mutate(n_obs = n()) |> 
+  filter(n_obs >= 1826) |> 
+  ungroup() |> 
+  select(everything(), -n_obs)
+
+#3 Stations of Interest DF
+weather_sites_df = full_nyweather_df |> 
+   filter(id == "USW00014768" | id == "USW00014735" | id == "USW00094728") |> 
+   mutate(
+    name = recode(
+      id, 
+      USW00094728 = "CentralPark_NYC",
+      USW00014735 = "Albany_Mid_NY",
+      USW00014768 = "Rochester_Upstate_NY"),
+    month = lubridate::floor_date(date, unit = "month")) |> 
+  mutate(name = as.factor(name)) |> 
+  mutate(name = ordered(name, c("CentralPark_NYC", "Albany_Mid_NY", "Rochester_Upstate_NY"))) |> 
+  select(name, id, date, month, everything())
+
+#Graph 1 Specifications
+temps = weather_sites_df |> 
+  drop_na(tmax) |> 
+  group_by(name, month)
+
+#Graph 2 Specifications
+precip_plot = weather_sites_df |> 
+  drop_na(prcp) |> 
+  group_by(name, month) |>
+  summarize(avg_prcp = mean(prcp))
+
+#Graph 3 Specifications
+snowfall = weather_sites_df |>
+  filter(date >= "2008-01-01") |> 
+  mutate(week = lubridate::floor_date(date, unit = "week")) |> 
+  select(name, date, month, week, snow) |> 
+  drop_na(snow) |> 
+  mutate(rank = min_rank(desc(snow))) |>
+  arrange(rank)
+
+```
+
 
 Column {data-width=650}
 -----------------------------------------------------------------------
 
-### Chart A
+### Chart A: Temperature Change Seasonality Across 3 NY Sites
 
 ```{r}
-nyc_airbnb |> 
-  mutate(neighbourhood = fct_reorder(neighbourhood, price)) |> 
-  plot_ly(y = ~price, color = ~neighbourhood, type = "box", colors = "viridis")
+plot_ly(temps, x = ~month, y = ~tmax, color = ~name, type = "box", colors = "viridis") |> 
+  layout(title = 'Max Temperature across 3 NY Monitors, 2006 - 2010', xaxis = list(title = 'Month'),
+         yaxis = list(title = 'Recorded Tmax Degrees C'), legend = list(orientation = 'h', title=list(text=' Monitoring Station' )))
 ```
 
 Column {data-width=350}
 -----------------------------------------------------------------------
 
-### Chart B
+### Chart B: Average Monthly Precipitation across 3 NY Sites
 
 ```{r}
-nyc_airbnb |> 
-  mutate(text_label = str_c("Price: $", price, "\nRating:", stars)) |> 
-plot_ly(
-  x = ~lat, y = ~long, color = ~price, text = ~text_label,
-  type = "scatter", mode = "markers", alpha = 0.5)
+plot_ly(precip_plot, x= ~month, y = ~avg_prcp, color = ~name, type = "scatter", mode = "markers") |>
+  add_lines(line = list(shape = 'spline', smoothing = 0.75)) |> 
+  layout(title = 'Average Monthly Precipitation across 3 NY Monitors, 2006 - 2010', xaxis = list(title = 'Month'), 
+         yaxis = list(title = 'Average Monthly Precipitation'), legend = list(orientation = 'h', title=list(text=' Monitoring Station')))
 ```
 
-### Chart C
+### Chart C: Total Weekly Snowfall Across 3 NY Sites
 
 ```{r}
-nyc_airbnb |> 
-  count(neighbourhood) |> 
-  mutate(neighbourhood = fct_reorder(neighbourhood, n)) |> 
-  plot_ly(x = ~neighbourhood, y = ~n, color = ~neighbourhood,
-          type = "bar", colors = "viridis")
+plot_ly(snowfall, x= ~week, y = ~snow, color = ~name, type= "bar") |> 
+  layout(title = 'Weekly Snowfall across 3 NY Monitors, 2008 - 2010', xaxis = list(title = 'Week'), 
+         yaxis = list(title = 'Total Weekly Snowfall (mm)'), legend = list(orientation = 'h', title=list(text=' Monitoring Station')))
 ```
 
