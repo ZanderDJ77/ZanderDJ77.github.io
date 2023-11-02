@@ -38,7 +38,11 @@ data("ny_noaa")
 nyweather_df = ny_noaa |> 
   janitor::clean_names() |> 
   filter(date >= "2006-01-01") |> 
-  filter(date <= "2010-12-31") 
+  filter(date <= "2010-12-31") |> 
+  mutate(tmax = as.numeric(tmax), tmin = as.numeric(tmin)) |> 
+  mutate(
+    tmin = (tmin/10),
+    tmax = (tmax/10))
 
 #Counting distinct weather station id's that are being used.
 test_count = nyweather_df |> 
@@ -63,30 +67,130 @@ full_nyweather_df = nyweather_df |>
 
 full_nyweather_df has `r nrow(full_nyweather_df)` observations across 145 station ids, containing `rncol(full_nyweather_df)` column variables before full manipulation.
 
-For particular specific data set groupings - I will need to convert the `date` format into separated years, months, and days to do average calculations over time, I will use this code below. 
-  separate(col = date,
-           into = c("year", "month", "day"),
-           sep = "-", 
-           convert = TRUE)
-
-USW00014768 = "Rochester_Upstate_NY"
-USW00014735 = "Albany_Mid_NY"
-USW00094728 = "CentralPark_NYC
-
-
-### Graph 1: Measuring Average Monthly Precipitation Overtime across NY Sites, 2006 - 2010
+To make data more manageable, a small dataset was created containing 3 Sites of interest across the Geography of NY State, 2006 - 2010, which have a monitoring point every day from 2006-2010.
 
 ```{r}
-rnoaa::ghcnd_stations(precip_plot)
+weather_sites_df = full_nyweather_df |> 
+   filter(id == "USW00014768" | id == "USW00014735" | id == "USW00094728") |> 
+   mutate(
+    name = recode(
+      id, 
+      USW00094728 = "CentralPark_NYC",
+      USW00014735 = "Albany_Mid_NY",
+      USW00014768 = "Rochester_Upstate_NY"),
+    month = lubridate::floor_date(date, unit = "month")) |> 
+  mutate(name = as.factor(name)) |> 
+  mutate(name = ordered(name, c("CentralPark_NYC", "Albany_Mid_NY", "Rochester_Upstate_NY"))) |> 
+  select(name, id, date, month, everything())
+ 
+weather_sites_df
+```
 
-precip_plot = full_nyweather_df |> 
-  drop_na(prcp) |> 
+
+```{r}
+full_tempchange = full_nyweather_df |> 
+  mutate(month = lubridate::floor_date(date, unit = "month")) |> 
+  drop_na(tmax) |>
   group_by(id) |> 
-  plot_ly(x = ~date, y = ~prcp,
-          type = "scatter", colors = "viridis")
+  mutate(temp_change = tmax - lag(tmax)) |> 
+  summarize(sd_temp_change = sd(temp_change, na.rm = TRUE)) |> 
+  mutate(rank = min_rank(sd_temp_change)) |> 
+  arrange(rank)
 
-precip_plot
+plot_ly(full_tempchange, x = ~id, y = ~sd_temp_change, color = ~id, type= "bar")
+```
+
+```{r}
+snowfall = full_nyweather_df |> 
+  select(id, date, snow) |> 
+  drop_na(snow) |> 
+  mutate(rank = min_rank(desc(snow))) |> 
+  filter(rank >= 51)
+
+plot_ly(snowfall, x = ~date, y = ~snow, color = ~id, type= "bar")
+
+```
+
+```{r}
+snowfall = weather_sites_df |>
+  filter(date >= "2008-01-01") |> 
+  mutate(week = lubridate::floor_date(date, unit = "week")) |> 
+  select(name, date, month, week, snow) |> 
+  drop_na(snow) |> 
+  mutate(rank = min_rank(desc(snow))) |>
+  arrange(rank)
+
+plot_ly(snowfall, x= ~week, y = ~snow, color = ~name, type= "bar") |> 
+  layout(title = 'Weekly Snowfall across 3 NY Monitors, 2008 - 2010', xaxis = list(title = 'Week'), 
+         yaxis = list(title = 'Total Weekly Snowfall (mm)'), legend = list(title=list(text=' Monitoring Station')))
+```
+
+
+```{r}
+temperature_change = weather_sites_df |> 
   
+  drop_na(tmax) |>
+  group_by(name, month) |> 
+  mutate(temp_change = tmax - lag(tmax)) |> 
+ summarize(
+    sd_temp_change = sd(temp_change, na.rm = TRUE)
+  )
 
+plot_ly(temperature_change, x= ~month, y = ~sd_temp_change, color = ~name, type= "bar", mode = "markers")
+```
+
+### Graph 2: Measuring Average Monthly Precipitation Overtime across 3 NY Sites, 2006 - 2010
+
+```{r}
+precip_plot = weather_sites_df |> 
+  drop_na(prcp) |> 
+  group_by(name, month) |>
+  summarize(avg_prcp = mean(prcp))
+
+plot_ly(precip_plot, x= ~month, y = ~avg_prcp, color = ~name, type = "scatter", mode = "markers") |>
+  add_lines(line = list(shape = 'spline', smoothing = 0.75)) |> 
+  layout(title = 'Average Monthly Precipitation across 3 NY Monitors, 2006 - 2010', xaxis = list(title = 'Month'), 
+         yaxis = list(title = 'Average Monthly Precipitation'), legend = list(title=list(text=' Monitoring Station')))
+```
+
+### Graph 1: Temperature Change Seasonality Across 3 Sites 
+
+```{r}
+temps = weather_sites_df |> 
+  drop_na(tmax) |> 
+  group_by(name, month)
+
+plot_ly(temps, x = ~month, y = ~tmax, color = ~name, type = "box", colors = "viridis") |> 
+  layout(title = 'Max Temperature across 3 NY Monitors, 2006 - 2010', xaxis = list(title = 'Month'),
+         yaxis = list(title = 'Recorded Tmax Degrees C'), legend = list(title=list(text=' Monitoring Station')))
+
+```
+
+####### New TEST
+
+```{r}
+data("instacart")
+
+instacart = 
+  instacart |> 
+  as_tibble()
+
+aisles_df = instacart |> 
+  janitor::clean_names() |> 
+  group_by(department, aisle) |> 
+  summarize(n_obs = n()) |> 
+  arrange(desc(n_obs))
+
+aisles_df
+
+aisle_orders = aisles_df |> 
+  filter(n_obs >= 10000) |> 
+  mutate(aisle = fct_reorder(aisle, n_obs)) |> 
+  ggplot(aes(x=aisle, y = n_obs, fill = department)) + 
+  geom_col() +
+  labs(title = "Number of items ordered in each aisle") +
+  theme(axis.text.x = element_text(angle= 60, hjust = 1))
+
+ggplotly(aisle_orders)
 ```
 
